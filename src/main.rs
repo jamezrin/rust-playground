@@ -1,11 +1,11 @@
 use std::{env, fs, thread};
-use std::env::join_paths;
-use std::fmt::format;
 use std::io::{BufWriter, Error, Write};
 
 const THING: u32 = 0xf09f8c88;
 
 const THING_COUNT: u64 = u64::pow(10, 8);
+
+const THING_COUNT_FLUSH_THRESHOLD: u32 = u32::pow(10, 3);
 
 const THING_FILE_CHUNKS: u32 = 5;
 
@@ -13,12 +13,14 @@ fn write_chunk(out_path: &std::path::Path) -> Result<(), Error> {
     let file = fs::File::create(out_path)?;
     let mut w = BufWriter::new(&file);
 
-    for _ in 0..THING_COUNT {
+    for i in 0..THING_COUNT {
         let thing_bytes = &(THING.to_be_bytes());
         w.write_all(thing_bytes)?;
-    }
 
-    w.flush().expect("Flushing buffer failed");
+        if i % THING_COUNT_FLUSH_THRESHOLD as u64 == 0 {
+            w.flush().expect("Flushing buffer failed");
+        }
+    }
 
     let metadata = file.metadata()?;
     println!(
